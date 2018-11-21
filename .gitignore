@@ -1,0 +1,5 @@
+#Ignore DB file
+*.sqlite
+
+#Ignore mikrotik configuration
+mikrotik_configuration.txt
