@@ -3,10 +3,10 @@
 
 require("init.php");
 
-if (isset($_GET[id]) and is_numeric($_GET[id])) {
+if (isset($_GET['id']) and is_numeric($_GET['id'])) {
   //get device info
   $getDevice = $db->prepare('SELECT * FROM devices WHERE id = ?');
-  $getDevice->bindValue(1, $_GET[id]);
+  $getDevice->bindValue(1, $_GET['id']);
   $result = $getDevice->execute();
   #print_r($device->fetchArray(SQLITE3_ASSOC));
   $device = $result->fetchArray(SQLITE3_ASSOC);
@@ -17,7 +17,7 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
 
   //get data for chart
   $getTraffic = $db->prepare('SELECT timestamp, tx, rx FROM traffic WHERE device_id = ? ORDER BY timestamp DESC LIMIT 6');
-  $getTraffic->bindValue(1, $_GET[id]);
+  $getTraffic->bindValue(1, $_GET['id']);
   $results = $getTraffic->execute();
   $chartData = '';
   while ($res = $results->fetchArray(SQLITE3_ASSOC)){
@@ -25,7 +25,6 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
     #print_r($res);
     if(!isset($res['timestamp'])) continue;
       //set to Google Chart data format
-      #array_push($traffic, [date('d M y H:i:s', strtotime($res['timestamp'])), round($res['tx']/1024,2), round($res['rx']/1024,2)]);
       $chartData .= "['".date('d M H:i', strtotime($res['timestamp']))."',".round(($res['tx']/1024/1024),2).",".round(($res['rx']/1024/1024),2)."],";
   }
   $results->finalize();
@@ -66,7 +65,7 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
   //get daily stats
   //query the db
   $daily = $db->prepare('SELECT sum(tx) as sumtx, sum(rx) as sumrx FROM traffic WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?');
-  $daily->bindValue(1, $_GET[id]);
+  $daily->bindValue(1, $_GET['id']);
   $daily->bindValue(2, date('Y-m-d 00:00:00'));
   $daily->bindValue(3, date('Y-m-d 23:59:59'));
   $result = $daily->execute();
@@ -94,7 +93,7 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
 
   //query the db
   $weekly = $db->prepare('SELECT sum(tx) as sumtx, sum(rx) as sumrx FROM traffic WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?');
-  $weekly->bindValue(1, $_GET[id]);
+  $weekly->bindValue(1, $_GET['id']);
   $weekly->bindValue(2, $firstdayofweek->format('Y-m-d 00:00:00'));
   $weekly->bindValue(3, $lastdayofweek->format('Y-m-d 23:59:59'));
   $result = $weekly->execute();
@@ -111,7 +110,7 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
   //get monthly stats
   //query the db
   $monthly = $db->prepare('SELECT sum(tx) as sumtx, sum(rx) as sumrx FROM traffic WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?');
-  $monthly->bindValue(1, $_GET[id]);
+  $monthly->bindValue(1, $_GET['id']);
   $monthly->bindValue(2, date('Y-m-01 00:00:00'));
   $monthly->bindValue(3, date('Y-m-t 23:59:59'));
   $result = $monthly->execute();
@@ -128,10 +127,15 @@ if (isset($_GET[id]) and is_numeric($_GET[id])) {
   $result->finalize();
 }
 else {
-  $getDevices = $db->prepare('SELECT * FROM devices');
-  $result = $getDevices->execute();
-  while ($device = $result->fetchArray(SQLITE3_ASSOC)){
-    echo '<a href="?id='.$device['id'].'"><strong>'.$device['sn'].'</strong></a> ('.$entry['comment'].') Last check: '.$device['last_check'].'<br/>';
+  $result = $db->query('SELECT * FROM devices');
+  if(empty($result->fetchArray(SQLITE3_ASSOC))) {
+    echo "No devices found.<br/>";
+  }
+  else {
+    $result = $db->query('SELECT * FROM devices');
+    while ($device = $result->fetchArray(SQLITE3_ASSOC)){
+      echo '<a href="?id='.$device['id'].'"><strong>'.$device['sn'].'</strong></a> ('.$device['comment'].') Last check: '.$device['last_check'].'<br/>';
+    }
   }
   $result->finalize();
 }
